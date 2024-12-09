@@ -5,10 +5,13 @@ import (
 	"log"
 )
 
+const (
+	tgBotHost = "api.telegtam.org"
+)
+
 func main() {
 
-	// token := mustToken()
-	// tgClien := telegram.New(token)
+	// tgClien := telegram.New(tgBotHost, mustToken())
 	// fetcher := fetcher.New()
 	// processor := processor.New()
 
