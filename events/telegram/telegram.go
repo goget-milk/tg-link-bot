@@ -53,7 +53,7 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 
 func (p *Processor) Process(event events.Event) error {
 	switch event.Type {
-	case events.Messge:
+	case events.Message:
 		return p.processMessage(event)
 	default:
 		return e.Wrap("can't process message", ErrUncnownEventType)
@@ -92,7 +92,7 @@ func event(upd telegram.Update) events.Event {
 		Text: fetchText(upd),
 	}
 
-	if updType == events.Messge {
+	if updType == events.Message {
 		res.Meta = Meta{
 			ChatID:   upd.Message.Chat.ID,
 			Username: upd.Message.From.Username,
@@ -113,5 +113,5 @@ func fetchType(upd telegram.Update) events.Type {
 	if upd.Message == nil {
 		return events.Unknown
 	}
-	return events.Messge
+	return events.Message
 }

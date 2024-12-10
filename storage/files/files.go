@@ -54,8 +54,11 @@ func (s Storage) Save(page *storage.Page) (err error) {
 	return nil
 }
 
-func (s *Storage) PickRandom(userName string) (page *storage.Page, err error) {
+func (s Storage) PickRandom(userName string) (page *storage.Page, err error) {
 	defer func() { err = e.WrapIfErr("can't pick random page", err) }()
+
+	// 1. check user folder
+	// 2. create folder
 
 	path := filepath.Join(s.basePath, userName)
 	files, err := os.ReadDir(path)
@@ -92,7 +95,7 @@ func (s Storage) Remove(p *storage.Page) error {
 func (s Storage) IsExist(p *storage.Page) (bool, error) {
 	fileName, err := fileName(p)
 	if err != nil {
-		return false, e.Wrap("can't remove file", err)
+		return false, e.Wrap("can't check if page exists", err)
 	}
 
 	path := filepath.Join(s.basePath, p.UserName, fileName)

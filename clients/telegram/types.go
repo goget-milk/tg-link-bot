@@ -2,7 +2,7 @@ package telegram
 
 type UpdatesResponse struct {
 	Ok     bool     `json:"ok"`
-	Result []Update `json:"update"`
+	Result []Update `json:"result"`
 }
 
 type Update struct {
