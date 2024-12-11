@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/url"
@@ -17,7 +18,7 @@ const (
 	SartCmd = "/start"
 )
 
-func (p *Processor) doCmd(text string, chatID int, username string) error {
+func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username string) error {
 	text = strings.TrimSpace(text)
 
 	log.Printf("got new command '%s' from '%s'", text, username)
@@ -28,32 +29,37 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 	// sart: /start: hi + help
 
 	if isAddCmd(text) {
-		return p.savePage(chatID, text, username)
+		return p.savePage(ctx, chatID, text, username)
 	}
 
 	switch text {
 	case RndCmd:
-		return p.sendRandom(chatID, username)
+		return p.sendRandom(ctx, chatID, username)
 	case HelpCmd:
-		return p.sendHelp(chatID)
+		return p.sendHelp(ctx, chatID)
 	case SartCmd:
-		return p.sendHelp(chatID)
+		return p.sendHelp(ctx, chatID)
 	default:
-		return p.tg.SendMessages(chatID, msgUnknownCommand)
+		return p.tg.SendMessages(ctx, chatID, msgUnknownCommand)
 	}
 }
 
-func (p *Processor) savePage(chatID int, pageURL string, username string) (err error) {
+func (p *Processor) savePage(
+	ctx context.Context,
+	chatID int,
+	pageURL string,
+	username string,
+) (err error) {
 	defer func() { err = e.WrapIfErr("can't do command: save page", err) }()
 
-	sendMsg := NewMessageSender(chatID, p.tg)
+	sendMsg := NewMessageSender(ctx, chatID, p.tg)
 
 	page := &storage.Page{
 		URL:      pageURL,
 		UserName: username,
 	}
 
-	isExist, err := p.storage.IsExist(page)
+	isExist, err := p.storage.IsExist(ctx, page)
 	if err != nil {
 		return err
 	}
@@ -63,7 +69,7 @@ func (p *Processor) savePage(chatID int, pageURL string, username string) (err e
 		return sendMsg(msgAllreadyExists)
 	}
 
-	if err := p.storage.Save(page); err != nil {
+	if err := p.storage.Save(ctx, page); err != nil {
 		return err
 	}
 
@@ -74,37 +80,37 @@ func (p *Processor) savePage(chatID int, pageURL string, username string) (err e
 	return nil
 }
 
-func (p *Processor) sendRandom(chatID int, username string) (err error) {
+func (p *Processor) sendRandom(ctx context.Context, chatID int, username string) (err error) {
 	defer func() { err = e.WrapIfErr("can't do command: can't send random", err) }()
 
-	page, err := p.storage.PickRandom(username)
+	page, err := p.storage.PickRandom(ctx, username)
 	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
 		return err
 	}
 
 	if errors.Is(err, storage.ErrNoSavedPages) {
-		return p.tg.SendMessages(chatID, msgNoSavedPages)
+		return p.tg.SendMessages(ctx, chatID, msgNoSavedPages)
 	}
 
-	if err := p.tg.SendMessages(chatID, page.URL); err != nil {
+	if err := p.tg.SendMessages(ctx, chatID, page.URL); err != nil {
 		return err
 	}
 
-	return p.storage.Remove(page)
+	return p.storage.Remove(ctx, page)
 }
 
-func (p *Processor) sendHelp(chatID int) error {
-	return p.tg.SendMessages(chatID, msgHelp)
+func (p *Processor) sendHelp(ctx context.Context, chatID int) error {
+	return p.tg.SendMessages(ctx, chatID, msgHelp)
 }
 
-func (p *Processor) sendHello(chatID int) error {
-	return p.tg.SendMessages(chatID, msgHello)
+func (p *Processor) sendHello(ctx context.Context, chatID int) error {
+	return p.tg.SendMessages(ctx, chatID, msgHello)
 }
 
 // Замыкание
-func NewMessageSender(chatID int, tg *telegram.Client) func(string) error {
+func NewMessageSender(ctx context.Context, chatID int, tg *telegram.Client) func(string) error {
 	return func(msg string) error {
-		return tg.SendMessages(chatID, msg)
+		return tg.SendMessages(ctx, chatID, msg)
 	}
 }
 
